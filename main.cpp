@@ -43,8 +43,9 @@ Code Generator
 #include <fstream>    // INCLUDED FOR std::fstream, readFile() 
 #include <string>     // INCLUDED FOR std::pmr::string, std::getline()
 #include "lexer.hpp"
+#include <vector>
 
-int main(int argc, char** args) { // char** args === char* args[]  
+int main(int _, char** args) { // char** args === char* args[]  
   std::string sourceCode;
 
   std::fstream readFile(args[1]);  // reading first argument 
@@ -54,16 +55,13 @@ int main(int argc, char** args) { // char** args === char* args[]
     sourceCode += i + "\n"; 
   }
 
-  std::cout << sourceCode;
-  /*
-  *
-  * free will place
-  *
-  *
-  *
-  *
-  */
-  readFile.close(); 
+  Lexer lex(sourceCode);
+  std::vector<Token> VectorOfTokens = lex.tokenize();
 
+  for (const auto& token : VectorOfTokens) {
+    std::cout << static_cast<int>(token.type) << "\n";
+  }
+
+  readFile.close(); 
   return 0;
 }

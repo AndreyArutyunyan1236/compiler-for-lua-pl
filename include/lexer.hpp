@@ -1,9 +1,66 @@
+#include <any>
+#include <string>
+#include <vector>
+#include <unordered_map>
+
 #ifndef LEXER_HPP
 #define LEXER_HPP
 
-enum class Type;
-struct Vect2;
-struct Token; 
-class Lexer; 
+enum class Type {
+  KW_LOCAL, KW_IF, KW_THEN, KW_ELSE, KW_END,
+  KW_FUNCTION, KW_RETURN, KW_WHILE,
+  KW_FOR, KW_DO, KW_REPEAT, KW_UNTIL, KW_NIL,
+  KW_TRUE, KW_FALSE, KW_AND, KW_OR, KW_NOT, KW_IN,
+
+  LIT_INT, // Literals
+  LIT_FLOAT, LIT_STRING,
+
+  IDENT, // Identificator
+  
+  PLUS, // Operatiors
+  MINUS, STAR, SLASH, DOUBLE_SLASH, PERCENT,
+  CARET, CONCAT, HASH, EQUAL, EQUAL_EQUAL,
+  NOT_EQUAL, LESS, GREATER, LESS_EQUAL,
+  GREATER_EQUAL, L_PAREN, R_PAREN, L_BRACE,
+  R_BRACE, L_BRACKET, R_BRACKET, COMMA,
+  DOT, COLON, COLON_COLON, SEMICOLON,
+
+  END_OF_FILE, // Specefic
+  ERROR
+};
+
+
+struct Vect2 { int x; int y; };
+
+struct Token { 
+  Type type; 
+  std::any value;
+  Vect2 position;
+};
+
+class Lexer {
+private:
+  std::string sourceCode;
+  int index = 0, x = 1, y = 1;
+
+  char peek(); 
+  char peekNext(); 
+  char advance(); 
+  bool match(char expected); 
+  void skipWhiteSpace(); 
+
+public:
+  std::unordered_map<char, Type> map = {
+    {'+', Type::PLUS},
+    {'-', Type::MINUS},
+    {'*', Type::STAR},
+    {';', Type::SEMICOLON},
+    {'\0', Type::END_OF_FILE},
+  };
+
+  Lexer(std::string source) : sourceCode(source), index(0), x(1), y(1) {}
+  Token nextToken(); 
+  std::vector<Token> tokenize(); 
+};
 
 #endif
