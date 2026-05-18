@@ -42,16 +42,16 @@ Code Generator
 #include <iostream>   // INCLUDED FOR std::cout 
 #include <fstream>    // INCLUDED FOR std::fstream, readFile() 
 #include <string>     // INCLUDED FOR std::pmr::string, std::getline()
-#include "lexer.hpp"
-#include <vector>
+#include "lexer.hpp"  // INCLUDED FOR class Lexer 
+#include <vector>     // INCLUDED FOR std::vector<Token>
 
-int main(int _, char** args) { // char** args === char* args[]  
+int main(int _, char** args) {
   std::string sourceCode;
 
   std::fstream readFile(args[1]);  // reading first argument 
-  std::pmr::string i;              // its for iteration  
+  std::pmr::string i;
 
-  while (std::getline(readFile, i)) { // reading and adding into sourceCode line by line (NOT char by char!!)
+  while (std::getline(readFile, i)) { // reading and adding into sourceCode line by line (NOT char by char)
     sourceCode += i + "\n"; 
   }
 

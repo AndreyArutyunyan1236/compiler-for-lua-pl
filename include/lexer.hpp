@@ -1,9 +1,9 @@
-#include <any>
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <stdbool.h>
-#include <cctype>
+#include <any>            // included for std::any in struct Token
+#include <string>         // included for std::string in class Lexer 
+#include <vector>         // included for std::vector<Token> tokenize() in class Lexer 
+#include <unordered_map>  // included for std::unordered_map<char, Type> operationMap in class Lexer 
+#include <stdbool.h>      // included for bool match(char expected) in class Lexer 
+#include <cctype>         // included for std::isdigit() in nextToken() function in class Lexer (called in ../src/lexer.cpp)
 
 #ifndef LEXER_HPP
 #define LEXER_HPP
@@ -19,7 +19,7 @@ enum class Type {
 
   IDENT, // Identificator
   
-  PLUS, // Operatiors
+  PLUS, // Symbols 
   MINUS, STAR, SLASH, DOUBLE_SLASH, PERCENT,
   CARET, CONCAT, HASH, EQUAL, EQUAL_EQUAL,
   NOT_EQUAL, LESS, GREATER, LESS_EQUAL,
@@ -30,7 +30,6 @@ enum class Type {
   END_OF_FILE, // Specefic
   ERROR
 };
-
 
 struct Vect2 { int x; int y; };
 
@@ -46,25 +45,26 @@ private:
   unsigned long long int index = 0;
   int x = 1, y = 1;
 
-std::unordered_map<char, Type> operationMap = {
-    {'+', Type::PLUS},
-    {'-', Type::MINUS},
-    {'*', Type::STAR},
-    {'%', Type::PERCENT},
-    {'^', Type::CARET},
-    {'#', Type::HASH},
-    {'(', Type::L_PAREN},
-    {')', Type::R_PAREN},
-    {'{', Type::L_BRACE},
-    {'}', Type::R_BRACE},
-    {'[', Type::L_BRACKET},
-    {']', Type::R_BRACKET},
-    {',', Type::COMMA},
-    {';', Type::SEMICOLON},
-    {'\0', Type::END_OF_FILE},
-};
+  std::unordered_map<char, Type> operationMap = {
+      {'+', Type::PLUS},
+      {'-', Type::MINUS},
+      {'*', Type::STAR},
+      {'%', Type::PERCENT},
+      {'^', Type::CARET},
+      {'#', Type::HASH},
+      {'(', Type::L_PAREN},
+      {')', Type::R_PAREN},
+      {'{', Type::L_BRACE},
+      {'}', Type::R_BRACE},
+      {'[', Type::L_BRACKET},
+      {']', Type::R_BRACKET},
+      {',', Type::COMMA},
+      {';', Type::SEMICOLON},
+      {'\0', Type::END_OF_FILE},
+  };
 
-  char numbersArray[10] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+  char numbersArray[10] = {'0', '1', '2', '3', '4',
+                          '5', '6', '7', '8', '9'};
 
   char peek(); 
   char peekNext(); 

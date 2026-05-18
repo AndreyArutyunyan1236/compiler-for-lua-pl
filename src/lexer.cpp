@@ -62,14 +62,18 @@ Token Lexer::nextToken() {
       }
     }
 
-    // need to parse value from string to int/float
-    if (isFloat) 
+    // converting and returning value
+    if (isFloat) { 
+      std::stoi(value);
       return Token{.type = Type::LIT_FLOAT, .value = value, .position = {x, y}};
-    else 
+    }
+    else { 
+      std::stof(value);
       return Token{.type = Type::LIT_INT, .value = value, .position = {x, y}};
+    }
   }
 
-  // checking if its a operator (not finished yet) 
+  // checking if its a symbol  
   Type type;
   if (operationMap.count(peek())) { // if exists in map
     type = operationMap[peek()]; 
@@ -78,6 +82,7 @@ Token Lexer::nextToken() {
     return Token{.type = type, .position = {x, y}};
 
   } else {
+    // fr this shit is bad as fuck
     switch (peek()) {
       case '=':
         advance();
