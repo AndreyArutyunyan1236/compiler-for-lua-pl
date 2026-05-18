@@ -4,10 +4,12 @@ char Lexer::peek() {
   if (index >= sourceCode.size()) return '\0';
   return sourceCode[index];
 }
+
 char Lexer::peekNext() {
   if (index+1 >= sourceCode.size()) return '\0';
   return sourceCode[index+1];
 }
+
 char Lexer::advance() {
   char c = sourceCode[index];
 
@@ -19,12 +21,14 @@ char Lexer::advance() {
   index++;
   return c;
 }
+
 bool Lexer::match(char expected) {
   if (peek() != expected) return false;
 
   advance();
   return true;
 }
+
 void Lexer::skipWhiteSpace() {
   while (index < sourceCode.size()) {
     char c = peek();
@@ -33,45 +37,96 @@ void Lexer::skipWhiteSpace() {
     else break;
   }
 }
-// dont forget about value of token
+
 Token Lexer::nextToken() {
   skipWhiteSpace();
+
+  // checking if its a number (int/float)
+  if (std::isdigit(peek())) {
+    std::string value;
+    bool isFloat = false;
+
+    while (std::isdigit((unsigned char)peek())) {
+      value += peek();
+      advance();
+    }
+
+    if (peek() == '.') {
+      isFloat = true;
+      value += peek();
+      advance();
+
+      while (std::isdigit((unsigned char)peek())) {
+        value += peek();
+        advance();
+      }
+    }
+
+    // need to parse value from string to int/float
+    if (isFloat) 
+      return Token{.type = Type::LIT_FLOAT, .value = value, .position = {x, y}};
+    else 
+      return Token{.type = Type::LIT_INT, .value = value, .position = {x, y}};
+  }
+
+  // checking if its a operator (not finished yet) 
   Type type;
-  if (map.count(peek())) { // if exists in map
-    type = map[peek()]; 
+  if (operationMap.count(peek())) { // if exists in map
+    type = operationMap[peek()]; 
     advance();
-    return Token{.type = type};
+
+    return Token{.type = type, .position = {x, y}};
+
   } else {
     switch (peek()) {
       case '=':
         advance();
         if (match('=')) type = Type::EQUAL_EQUAL;
         else type = Type::EQUAL;
-        return Token{.type = type};
+        return Token{.type = type, .position = {x, y}};
+
       case '/':
         advance();
         if (match('/')) type = Type::DOUBLE_SLASH;
         else type = Type::SLASH;
-        return Token{.type = type};
+        return Token{.type = type, .position = {x, y}};
+
       case '<':
         advance();
         if (match('=')) type = Type::LESS_EQUAL;
         else type = Type::LESS;
-        return Token{.type = type};
+        return Token{.type = type, .position = {x, y}};
+
       case '>':
         advance();
         if (match('=')) type = Type::GREATER_EQUAL;
         else type = Type::GREATER;
-        return Token{.type = type};
+        return Token{.type = type, .position = {x, y}};
+
       case ':':
         advance();
         if (match(':')) type = Type::COLON_COLON;
         else type = Type::COLON;
-        return Token{.type = type};
+        return Token{.type = type, .position = {x, y}};
+
+       case '~':
+        advance();
+        if (match('=')) type = Type::NOT_EQUAL;
+        else type = Type::ERROR; 
+        return Token{.type = type, .position = {x, y}};
+
+      case '.':
+        advance();
+        if (match('.')) type = Type::CONCAT;
+        else type = Type::ERROR;
+        return Token{.type = type, .position = {x, y}};
+
       default:
-        return Token{.type = Type::ERROR}; } 
+        return Token{.type = Type::ERROR, .position = {x, y}};
+    }
+
+    return Token{.type = type, .position = {x, y}};
   }
-  return Token{.type = type};
 }
 
 std::vector<Token> Lexer::tokenize() { 
