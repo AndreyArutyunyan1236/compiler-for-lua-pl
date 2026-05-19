@@ -41,6 +41,42 @@ void Lexer::skipWhiteSpace() {
 Token Lexer::nextToken() {
   skipWhiteSpace();
 
+  // just "eating" it all until operator 
+  std::string value;
+  if (std::isalpha(peek()) || peek() == '_') { // this if statment is just for ident to not start from number (123var)
+    while (std::isalnum(peek()) || peek() == '_') {
+      value += peek();
+      advance();
+    }
+  }
+
+  if (value != "") {
+    if (keywordMap.count(value)) { // meaning that this is keyword
+      Type type;   
+      type = keywordMap[value];
+
+      return Token{.type = type, .value = value, .position = {x, y}};
+    } 
+    else { // meaning that this is just a identificator
+      return Token{.type = Type::IDENT, .value = value, .position = {x, y}};
+    }
+  }
+
+  // string check 
+  if (peek() == '"') {
+    advance();
+
+    while (peek() != '"' && peek() != '\0') {
+      value += peek();
+      advance();
+    }
+    advance();
+  }
+
+  if (value != "") {
+      return Token{.type = Type::LIT_STRING, .value = value, .position = {x, y}};
+  }
+
   // checking if its a number (int/float)
   if (std::isdigit(peek())) {
     std::string value;
@@ -64,13 +100,12 @@ Token Lexer::nextToken() {
 
     // converting and returning value
     if (isFloat) { 
-      std::stoi(value);
-      return Token{.type = Type::LIT_FLOAT, .value = value, .position = {x, y}};
+      value = std::stof(value);
+    } else { 
+      value = std::stoi(value);
     }
-    else { 
-      std::stof(value);
-      return Token{.type = Type::LIT_INT, .value = value, .position = {x, y}};
-    }
+
+    return Token{.type = Type::LIT_FLOAT, .value = value, .position = {x, y}};
   }
 
   // checking if its a symbol  
@@ -129,8 +164,6 @@ Token Lexer::nextToken() {
       default:
         return Token{.type = Type::ERROR, .position = {x, y}};
     }
-
-    return Token{.type = type, .position = {x, y}};
   }
 }
 
