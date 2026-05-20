@@ -41,6 +41,15 @@ void Lexer::skipWhiteSpace() {
 Token Lexer::nextToken() {
   skipWhiteSpace();
 
+  // if its comments
+  if (peek() == '-' && peekNext() == '-') {
+    while (peek() != '\n' && peek() != '\0') {
+      advance();
+    } 
+
+    return Token{.type = Type::COMMENT};
+  }
+
   // just "eating" it all until operator 
   std::string value;
   if (std::isalpha(peek()) || peek() == '_') { // this if statment is just for ident to not start from number (123var)

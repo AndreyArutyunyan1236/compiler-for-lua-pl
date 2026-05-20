@@ -28,6 +28,7 @@ enum class Type {
   COLON, COLON_COLON, SEMICOLON,
 
   END_OF_FILE, // Specefic
+  COMMENT,
   ERROR
 };
 
