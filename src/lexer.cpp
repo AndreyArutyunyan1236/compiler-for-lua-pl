@@ -47,7 +47,7 @@ Token Lexer::nextToken() {
       advance();
     } 
 
-    return Token{.type = Type::COMMENT};
+    return nextToken();
   }
 
   // just "eating" it all until operator 
