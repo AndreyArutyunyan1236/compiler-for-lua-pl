@@ -12,6 +12,7 @@ Parser
     ABSTRACT SYNTAX TREE (AST).
     This tree represents the logical structure of the code, 
     ensuring it follows the rules of the LANGUAGE'S GRAMMAR.
+    pratt parser
 }
 
 Symbol Table 
@@ -59,7 +60,7 @@ int main(int _, char** args) {
   std::vector<Token> VectorOfTokens = lex.tokenize();
 
   for (const auto& token : VectorOfTokens) {
-    std::cout << static_cast<int>(token.type) << "\n";
+    std::cout << static_cast<int>(token.type) << " ";
   }
 
   readFile.close(); 

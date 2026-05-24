@@ -109,12 +109,10 @@ Token Lexer::nextToken() {
 
     // converting and returning value
     if (isFloat) { 
-      value = std::stof(value);
+      return Token{.type = Type::LIT_FLOAT, .value = std::stof(value), .position = {x, y}};
     } else { 
-      value = std::stoi(value);
+      return Token{.type = Type::LIT_INT, .value = std::stoi(value), .position = {x, y}};
     }
-
-    return Token{.type = Type::LIT_FLOAT, .value = value, .position = {x, y}};
   }
 
   // checking if its a symbol  
