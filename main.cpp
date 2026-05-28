@@ -1,4 +1,5 @@
 /* -------------------------------------------------------------------------------------------------------------
+// DONE
 Lexer (Scanner / Tokenizer) 
 {
     This is the first component that reads the raw source code and breaks it down into small,
@@ -6,13 +7,14 @@ Lexer (Scanner / Tokenizer)
     For example, it identifies KEYWORDS (like int), IDENTIFIERS (variable names), and SYMBOLS (like + or {).
 }
 
+// IN PROCESS
 Parser 
 {
     The parser takes the stream of tokens and organizes them into a tree structure called an
     ABSTRACT SYNTAX TREE (AST).
     This tree represents the logical structure of the code, 
     ensuring it follows the rules of the LANGUAGE'S GRAMMAR.
-    pratt parser
+    RECURSIVE DESCENT and PRATT parsing methods
 }
 
 Symbol Table 

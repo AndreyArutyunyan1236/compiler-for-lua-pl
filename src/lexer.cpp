@@ -168,6 +168,17 @@ Token Lexer::nextToken() {
         else type = Type::ERROR;
         return Token{.type = type, .position = {x, y}};
 
+      case '|':
+        advance();
+        if (match('|')) type = Type::VERTICAL_BAR;
+        else type = Type::ERROR;
+        return Token{.type = type, .position = {x, y}};
+      case '&':
+        advance();
+        if (match('&')) type = Type::AMPERSAND;
+        else type = Type::ERROR;
+        return Token{.type = type, .position = {x, y}};
+
       default:
         return Token{.type = Type::ERROR, .position = {x, y}};
     }
