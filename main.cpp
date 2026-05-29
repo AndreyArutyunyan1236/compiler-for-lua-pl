@@ -7,7 +7,7 @@ Lexer (Scanner / Tokenizer)
     For example, it identifies KEYWORDS (like int), IDENTIFIERS (variable names), and SYMBOLS (like + or {).
 }
 
-// IN PROCESS
+// DONE 
 Parser 
 {
     The parser takes the stream of tokens and organizes them into a tree structure called an
@@ -42,10 +42,10 @@ Code Generator
     typically assembly code or machine code—for a specific processor.
 }
 ------------------------------------------------------------------------------------------------------------- */
-#include <iostream>   // INCLUDED FOR std::cout 
 #include <fstream>    // INCLUDED FOR std::fstream, readFile() 
 #include <string>     // INCLUDED FOR std::pmr::string, std::getline()
-#include "lexer.hpp"  // INCLUDED FOR class Lexer 
+#include "lexer.hpp"  // INCLUDED FOR class Lexer, tokenize() 
+#include <parser.hpp> // INCLUDED FOR class Parser, parse_block()
 #include <vector>     // INCLUDED FOR std::vector<Token>
 
 int main(int _, char** args) {
@@ -61,9 +61,8 @@ int main(int _, char** args) {
   Lexer lex(sourceCode);
   std::vector<Token> VectorOfTokens = lex.tokenize();
 
-  for (const auto& token : VectorOfTokens) {
-    std::cout << static_cast<int>(token.type) << " ";
-  }
+  Parser parser(VectorOfTokens);  
+  parser.parse_block();
 
   readFile.close(); 
   return 0;

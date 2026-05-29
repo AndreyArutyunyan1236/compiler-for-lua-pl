@@ -7,11 +7,17 @@
 
 struct Node {
   Token value;
-  bool isError = false;
+  bool isLocal = false;
   Type op;
 
   std::unique_ptr<Node> left;
   std::unique_ptr<Node> right;
+  std::unique_ptr<Node> condition;
+
+  std::vector<std::unique_ptr<Node>> args;
+  std::vector<std::unique_ptr<Node>> body;
+  std::vector<std::unique_ptr<Node>> elseifs;
+  std::vector<std::unique_ptr<Node>> elseBody;
 };
 
 class Parser {
@@ -33,14 +39,16 @@ private:
   std::unique_ptr<Node> nud(); 
   std::unique_ptr<Node> parse_expr(int min_lbp);
 
-  /*
-   * funcitons to parse every keyword by using pratt (will be used in parse_stat method):
-   * parse_local(), parse_if() ...
-  */
+  std::unique_ptr<Node> parse_if();
+  std::unique_ptr<Node> parse_elseif();
+  std::unique_ptr<Node> parse_while();
+  std::unique_ptr<Node> parse_for();
+  std::unique_ptr<Node> parse_local();
+  std::unique_ptr<Node> parse_function(bool isLocal);
 
 public:
-  void parse_block();
-  void parse_stat();
+std::vector<std::unique_ptr<Node>> parse_block(); 
+  std::unique_ptr<Node> parse_stat();
 
   Parser(std::vector<Token> VectorOfTokens) : listOfTokens(VectorOfTokens) {}
 };

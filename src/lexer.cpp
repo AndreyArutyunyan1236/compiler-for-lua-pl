@@ -60,13 +60,13 @@ Token Lexer::nextToken() {
   }
 
   if (value != "") {
-    if (keywordMap.count(value)) { // meaning that this is keyword
+    if (keywordMap.count(value)) { // this is keyword
       Type type;   
       type = keywordMap[value];
 
       return Token{.type = type, .value = value, .position = {x, y}};
     } 
-    else { // meaning that this is just a identificator
+    else { // this is just a identificator
       return Token{.type = Type::IDENT, .value = value, .position = {x, y}};
     }
   }
