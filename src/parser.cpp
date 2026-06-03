@@ -21,9 +21,8 @@ bool Parser::check(Type type) {
   return false;
 }
 
-bool Parser::match(Type type) {
-  if (peek().type == type) {
-    advance();
+bool Parser::checkNext(Type type) {
+  if (peekNext().type == type) {
     return true;
   }
   return false;
@@ -34,12 +33,16 @@ void Parser::expect(Type type) {
     advance();
     return;
   }
+  throwError();
+}
+
+void Parser::throwError() {
   throw std::runtime_error("Runtime Error: Expected different token at line " + std::to_string(peek().position.y));
 }
 
 bool Parser::endblock() {
   for (Type type : endblockArray) {
-    if (peek().type == type) return true;
+    if (check(type)) return true;
   }
   return false;
 }
@@ -47,18 +50,36 @@ bool Parser::endblock() {
 std::unique_ptr<Node> Parser::parse_local() {
   advance();
 
-  if (peek().type != Type::IDENT) {
-    if (peek().type == Type::KW_FUNCTION) {
+  if (!check(Type::IDENT)) {
+    if (check(Type::KW_FUNCTION)) {
      return parse_function(true);
     }
-    else throw std::runtime_error("Runtime Error: Expected identificator at line " + std::to_string(peek().position.y));
+    else throwError();
   }
 
-  Token name = peek();
-  advance();
-
+  Token name = advance();
   std::unique_ptr<Node> expr = nullptr;
-  if (peek().type == Type::EQUAL) {
+
+  if (check(Type::L_BRACKET)) {
+    advance();
+    std::vector<std::unique_ptr<Node>> array;
+    std::unique_ptr<Node> element;
+
+    while (!check(Type::R_BRACKET)) { 
+      element = parse_expr(0);
+      array.push_back(std::move(element)); 
+
+      if (!checkNext(Type::R_BRACKET)) advance();
+    }
+
+    return std::make_unique<Node>(Node{
+      .value = name,
+      .op = Type::KW_LOCAL,
+      .arrayElements = std::move(array),
+    });
+  }
+
+  if (check(Type::EQUAL)) {
     advance();
     expr = parse_expr(0);
   }
@@ -71,7 +92,6 @@ std::unique_ptr<Node> Parser::parse_local() {
 }
 
 std::unique_ptr<Node> Parser::parse_while() {
-  std::unique_ptr<Node> kwWhile = std::make_unique<Node>(Node{.op = Type::KW_WHILE});
   advance();
 
   std::unique_ptr<Node> condition = parse_expr(0); 
@@ -79,14 +99,13 @@ std::unique_ptr<Node> Parser::parse_while() {
   expect(Type::KW_END);
 
   return std::make_unique<Node>(Node{
-    .op = kwWhile->op,
+    .op = Type::KW_WHILE,
     .condition = std::move(condition),
     .body = std::move(body), 
   });
 }
 
 std::unique_ptr<Node> Parser::parse_for() {
-  std::unique_ptr<Node> kwFor = std::make_unique<Node>(Node{.op = Type::KW_FOR});
   advance();
 
   std::unique_ptr<Node> condition = parse_expr(0); 
@@ -94,21 +113,20 @@ std::unique_ptr<Node> Parser::parse_for() {
   expect(Type::KW_END);
 
   return std::make_unique<Node>( Node{
-    .op = kwFor->op,
+    .op = Type::KW_FOR,
     .condition = std::move(condition),
     .body = std::move(body), 
   });
 }
 
 std::unique_ptr<Node> Parser::parse_if() {
-  std::unique_ptr<Node> kwIf = std::make_unique<Node>( Node{ .op = Type::KW_IF }); 
   advance();
 
   std::unique_ptr<Node> condition = parse_expr(0); 
 
-  if (peek().type == Type::KW_THEN) {
+  if (check(Type::KW_THEN)) {
     advance();
-  } else throw std::runtime_error("Runtime Error: Expected different keyoword (then) at line " + std::to_string(peek().position.y));
+  } else throwError();
 
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
 
@@ -126,7 +144,7 @@ std::unique_ptr<Node> Parser::parse_if() {
   expect(Type::KW_END);
 
   return std::make_unique<Node>(Node{
-    .op = kwIf->op,
+    .op = Type::KW_IF,
     .condition = std::move(condition),
     .body = std::move(body), 
     .elseifs = std::move(elseifs),
@@ -135,54 +153,56 @@ std::unique_ptr<Node> Parser::parse_if() {
 }
 
 std::unique_ptr<Node> Parser::parse_elseif() {
-  std::unique_ptr<Node> kwelseif = std::make_unique<Node>( Node{ .op = Type::KW_ELSEIF }); 
   advance();
 
   std::unique_ptr<Node> condition = parse_expr(0);
 
-  if (peek().type == Type::KW_THEN) {
+  if (check(Type::KW_THEN)) {
     advance();
-  } else {
-    throw std::runtime_error("Runtime Error: Expected different keyoword (then) at line " + std::to_string(peek().position.y));
-  }
-
+  } else throwError();
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
 
   return std::make_unique<Node>(Node{
-    .op = kwelseif->op,
+    .op = Type::KW_ELSEIF,
     .condition = std::move(condition),
     .body = std::move(body), 
   });
 }
 
 std::unique_ptr<Node> Parser::parse_function(bool isLocal) {
-  std::unique_ptr<Node> kwFunc = std::make_unique<Node>(Node{ .op = Type::KW_FUNCTION }); 
   advance();
   
-  if (peek().type != Type::IDENT) {
-    throw std::runtime_error("Runtime Error: Expected identificator at line " + std::to_string(peek().position.y));
+  if (!check(Type::IDENT)) {
+    throwError();
   }
   Token funcName = peek();
   advance();
 
   std::vector<std::unique_ptr<Node>> Args;
-  if (peek().type == Type::L_PAREN) {
+  if (check(Type::L_PAREN)) {
     advance();
 
-    while (peek().type != Type::R_PAREN) {
-      if (peek().type != Type::IDENT) {
-        throw std::runtime_error("Runtime Error: Expected identificator at line " + std::to_string(peek().position.y));
+    while (!check(Type::R_PAREN)) {
+      if (!check(Type::IDENT)) {
+        throwError();
       }
 
       Args.push_back(std::make_unique<Node>(Node{.value = peek(), .op = Type::IDENT}));
       advance();
 
-      if (peek().type == Type::COMMA) advance();
+      if (check(Type::COMMA)) advance();
     }
 
     advance();
   }
-  else throw std::runtime_error("Runtime Error: Expected different token at line " + std::to_string(peek().position.y));
+  else {
+    if (check(Type::COLON_COLON)) {
+      advance();
+      Token className = peek();
+      return parse_method(className, isLocal);
+    }
+    else throwError();
+  } 
   
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
   expect(Type::KW_END);
@@ -190,16 +210,96 @@ std::unique_ptr<Node> Parser::parse_function(bool isLocal) {
   return std::make_unique<Node>(Node{
     .value = funcName,
     .isLocal = isLocal,
-    .op = kwFunc->op,
-    .args = std::move(Args),
+    .op = Type::KW_FUNCTION,
+    .Args = std::move(Args),
     .body = std::move(body),
+  });
+}
+
+std::unique_ptr<Node> Parser::parse_method(Token className, bool isLocal) {
+  advance();
+  
+  if (!check(Type::IDENT)) {
+    throwError();
+  }
+  Token methodName = peek();
+  advance();
+
+  std::vector<std::unique_ptr<Node>> Args;
+  if (check(Type::L_PAREN)) {
+    advance();
+
+    while (!check(Type::R_PAREN)) {
+      if (!check(Type::IDENT)) {
+        throwError();
+      }
+
+      Args.push_back(std::make_unique<Node>(Node{.value = peek(), .op = Type::IDENT}));
+      advance();
+
+      if (check(Type::COMMA)) advance();
+    }
+
+    advance();
+  }
+  else throwError();
+  
+  std::vector<std::unique_ptr<Node>> body = parse_block(); 
+  expect(Type::KW_END);
+
+  return std::make_unique<Node>(Node{
+    .value = methodName,
+    .className = className,
+    .isLocal = isLocal,
+    .op = Type::KW_FUNCTION,
+    .Args = std::move(Args),
+    .body = std::move(body),
+  });
+}
+
+std::unique_ptr<Node> Parser::parse_ident() {
+  Token value = peek();
+  advance();
+
+  std::unique_ptr<Node> args;
+  std::vector<std::unique_ptr<Node>> argsVect;
+
+  Type op;
+
+  if (check(Type::L_PAREN)) {
+    advance();
+    while (!check(Type::R_PAREN)) {
+      args = parse_expr(0);
+      argsVect.push_back(std::move(args));
+
+      if (!checkNext(Type::R_PAREN)) advance();
+    }
+
+    op = Type::CALLEDFUNCTION;
+  }
+  else if (check(Type::EQUAL)) {
+    advance();
+
+    args = parse_expr(0);
+    argsVect.push_back(std::move(args));
+
+    op = Type::IDENT;
+  }
+  else {
+    throwError();
+  }
+
+  return std::make_unique<Node>(Node{
+    .value = value,
+    .op = op, 
+    .Args = std::move(argsVect),
   });
 }
 
 std::vector<std::unique_ptr<Node>> Parser::parse_block() {
   std::vector<std::unique_ptr<Node>> block;
 
-  while (!endblock() && peek().type != Type::END_OF_FILE) {
+  while (!endblock() && !check(Type::END_OF_FILE)) {
     std::unique_ptr<Node> statement = parse_stat(); 
     if (statement) {
       block.push_back(std::move(statement)); 
@@ -225,6 +325,8 @@ std::unique_ptr<Node> Parser::parse_stat() {
       break;
     case Type::KW_FUNCTION:
       return parse_function(false);
+    case Type::IDENT:
+      return parse_ident();
     default:
       return parse_expr(0); 
   } 
@@ -254,15 +356,16 @@ int Parser::get_lbp() {
 }
 
 std::unique_ptr<Node> Parser::nud() {
-  if (peek().type == Type::IDENT || peek().type == Type::LIT_INT ||
-      peek().type == Type::LIT_FLOAT || peek().type == Type::LIT_STRING)
+  if (check(Type::IDENT) || check(Type::LIT_INT) ||
+      check(Type::LIT_FLOAT) || check(Type::LIT_STRING)
+      || check(Type::KW_TRUE) || check(Type::KW_FALSE))
   {
     Token value = peek();
     advance();
 
     return std::make_unique<Node>(Node{.value = value});
   }
-  else if (peek().type == Type::L_PAREN) {
+  else if (check(Type::L_PAREN)) {
     advance();
     std::unique_ptr<Node> ParenExpr = parse_expr(0); 
     expect(Type::R_PAREN);
@@ -270,7 +373,7 @@ std::unique_ptr<Node> Parser::nud() {
     return ParenExpr;
   }
 
-  throw std::runtime_error("Runtime Error: Expected different token at line " + std::to_string(peek().position.y));
+  throwError();
 }
 
 std::unique_ptr<Node> Parser::parse_expr(int min_lbp) {

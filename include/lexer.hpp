@@ -17,7 +17,7 @@ enum class Type {
   LIT_INT, // Literals
   LIT_FLOAT, LIT_STRING,
 
-  IDENT, // Identificator
+  IDENT, CALLEDFUNCTION, // Identificator
   
   PLUS, // Symbols 
   MINUS, STAR, VERTICAL_BAR, SLASH, DOUBLE_SLASH, PERCENT,
@@ -60,6 +60,7 @@ private:
     {']', Type::R_BRACKET},
     {',', Type::COMMA},
     {';', Type::SEMICOLON},
+    {':', Type::COLON_COLON},
     {'\0', Type::END_OF_FILE},
   };
   

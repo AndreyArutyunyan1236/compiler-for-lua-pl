@@ -76,5 +76,6 @@ end
 
 local dog = Animal.new("Dog", "Woof!")
 local cat = Animal.new("Cat", "Meow!")
+
 dog:speak()
 cat:speak()

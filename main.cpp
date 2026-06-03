@@ -42,13 +42,13 @@ Code Generator
     typically assembly code or machine code—for a specific processor.
 }
 ------------------------------------------------------------------------------------------------------------- */
-#include <fstream>    // INCLUDED FOR std::fstream, readFile() 
-#include <string>     // INCLUDED FOR std::pmr::string, std::getline()
-#include "lexer.hpp"  // INCLUDED FOR class Lexer, tokenize() 
-#include <parser.hpp> // INCLUDED FOR class Parser, parse_block()
-#include <vector>     // INCLUDED FOR std::vector<Token>
+#include <fstream>         // INCLUDED FOR std::fstream, readFile() 
+#include <string>          // INCLUDED FOR std::pmr::string, std::getline()
+#include <parser.hpp>      // INCLUDED FOR class Parser, parse_block()
+#include <vector>          // INCLUDED FOR std::vector<Token>
+#include "lexer.hpp"       // INCLUDED FOR class Lexer, tokenize() 
 
-int main(int _, char** args) {
+int main([[maybe_unused]]int argc, char** args) {
   std::string sourceCode;
 
   std::fstream readFile(args[1]);  // reading first argument 
@@ -62,7 +62,7 @@ int main(int _, char** args) {
   std::vector<Token> VectorOfTokens = lex.tokenize();
 
   Parser parser(VectorOfTokens);  
-  parser.parse_block();
+  auto ast = parser.parse_block();
 
   readFile.close(); 
   return 0;

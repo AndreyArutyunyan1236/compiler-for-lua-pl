@@ -11,6 +11,7 @@ char Lexer::peekNext() {
 }
 
 char Lexer::advance() {
+  if (index >= sourceCode.size()) return '\0';
   char c = sourceCode[index];
 
   if (c == '\n') {
@@ -66,9 +67,8 @@ Token Lexer::nextToken() {
 
       return Token{.type = type, .value = value, .position = {x, y}};
     } 
-    else { // this is just a identificator
-      return Token{.type = Type::IDENT, .value = value, .position = {x, y}};
-    }
+    // this is just a identificator
+    else return Token{.type = Type::IDENT, .value = value, .position = {x, y}};
   }
 
   // string check 
@@ -124,7 +124,6 @@ Token Lexer::nextToken() {
     return Token{.type = type, .position = {x, y}};
 
   } else {
-    // fr this shit is bad as fuck
     switch (peek()) {
       case '=':
         advance();

@@ -7,14 +7,17 @@
 
 struct Node {
   Token value;
+  Token className;
   bool isLocal = false;
   Type op;
+
 
   std::unique_ptr<Node> left;
   std::unique_ptr<Node> right;
   std::unique_ptr<Node> condition;
 
-  std::vector<std::unique_ptr<Node>> args;
+  std::vector<std::unique_ptr<Node>> arrayElements;
+  std::vector<std::unique_ptr<Node>> Args;
   std::vector<std::unique_ptr<Node>> body;
   std::vector<std::unique_ptr<Node>> elseifs;
   std::vector<std::unique_ptr<Node>> elseBody;
@@ -31,8 +34,9 @@ private:
   Token peekNext();
   Token advance();
   bool  check(Type type);
-  bool  match(Type type);
+  bool checkNext(Type type); 
   void  expect(Type type);
+  [[noreturn]] void throwError();
 
   bool endblock();
   int  get_lbp(); 
@@ -45,9 +49,11 @@ private:
   std::unique_ptr<Node> parse_for();
   std::unique_ptr<Node> parse_local();
   std::unique_ptr<Node> parse_function(bool isLocal);
+  std::unique_ptr<Node> parse_ident();
+  std::unique_ptr<Node> parse_method(Token className, bool isLocal); 
 
 public:
-std::vector<std::unique_ptr<Node>> parse_block(); 
+  std::vector<std::unique_ptr<Node>> parse_block(); 
   std::unique_ptr<Node> parse_stat();
 
   Parser(std::vector<Token> VectorOfTokens) : listOfTokens(VectorOfTokens) {}
