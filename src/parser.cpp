@@ -89,11 +89,11 @@ std::unique_ptr<Node> Parser::parse_local() {
       if (!checkNext(Type::R_BRACKET)) advance();
     }
 
-    return std::make_unique<Node>(Node{
-      .value = name,
-      .op = Type::KW_LOCAL,
-      .arrayElements = std::move(array),
-    });
+    return std::make_unique<LocalNode>(
+      std::move(name),
+      nullptr,
+      std::move(array)
+    );
   }
 
   if (check(Type::EQUAL)) {
@@ -101,11 +101,11 @@ std::unique_ptr<Node> Parser::parse_local() {
     expr = parse_expr(0);
   }
 
-  return std::make_unique<Node>(Node{
-    .value = name,
-    .op = Type::KW_LOCAL,
-    .right = std::move(expr),
-  });
+  return std::make_unique<LocalNode>(
+    std::move(name),
+    std::move(expr),
+    std::vector<std::unique_ptr<Node>>{}
+  );
 }
 
 std::unique_ptr<Node> Parser::parse_while() {
@@ -115,11 +115,10 @@ std::unique_ptr<Node> Parser::parse_while() {
   std::vector<std::unique_ptr<Node>> body = parse_block();
   expect(Type::KW_END);
 
-  return std::make_unique<Node>(Node{
-    .op = Type::KW_WHILE,
-    .condition = std::move(condition),
-    .body = std::move(body), 
-  });
+  return std::make_unique<WhileNode>(
+    std::move(condition),
+    std::move(body) 
+  );
 }
 
 std::unique_ptr<Node> Parser::parse_for() {
@@ -129,11 +128,10 @@ std::unique_ptr<Node> Parser::parse_for() {
   std::vector<std::unique_ptr<Node>> body = parse_block();
   expect(Type::KW_END);
 
-  return std::make_unique<Node>( Node{
-    .op = Type::KW_FOR,
-    .condition = std::move(condition),
-    .body = std::move(body), 
-  });
+  return std::make_unique<ForNode>(
+    std::move(condition),
+    std::move(body) 
+  );
 }
 
 std::unique_ptr<Node> Parser::parse_if() {
@@ -160,13 +158,12 @@ std::unique_ptr<Node> Parser::parse_if() {
 
   expect(Type::KW_END);
 
-  return std::make_unique<Node>(Node{
-    .op = Type::KW_IF,
-    .condition = std::move(condition),
-    .body = std::move(body), 
-    .elseifs = std::move(elseifs),
-    .elseBody = std::move(elseBody),
-  });
+  return std::make_unique<IfNode>(
+    std::move(condition),
+    std::move(body), 
+    std::move(elseifs),
+    std::move(elseBody)
+  );
 }
 
 std::unique_ptr<Node> Parser::parse_elseif() {
@@ -179,11 +176,10 @@ std::unique_ptr<Node> Parser::parse_elseif() {
   } else throwError(Type::KW_THEN);
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
 
-  return std::make_unique<Node>(Node{
-    .op = Type::KW_ELSEIF,
-    .condition = std::move(condition),
-    .body = std::move(body), 
-  });
+  return std::make_unique<ElseIfNode>(
+    std::move(condition),
+    std::move(body)
+  );
 }
 
 std::unique_ptr<Node> Parser::parse_function(bool isLocal) {
@@ -221,13 +217,12 @@ std::unique_ptr<Node> Parser::parse_function(bool isLocal) {
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
   expect(Type::KW_END);
 
-  return std::make_unique<Node>(Node{
-    .value = funcName,
-    .isLocal = isLocal,
-    .op = Type::KW_FUNCTION,
-    .Args = std::move(Args),
-    .body = std::move(body),
-  });
+  return std::make_unique<FunctionNode>(
+    std::move(funcName),
+    isLocal,
+    std::move(Args),
+    std::move(body)
+  );
 }
 
 std::unique_ptr<Node> Parser::parse_method(Token className, bool isLocal) {
@@ -240,7 +235,7 @@ std::unique_ptr<Node> Parser::parse_method(Token className, bool isLocal) {
   Token methodName = peek();
   advance();
 
-  std::vector<std::unique_ptr<Node>> Args;
+  std::vector<std::unique_ptr<Node>> args;
   if (check(Type::L_PAREN)) {
     advance();
 
@@ -249,9 +244,13 @@ std::unique_ptr<Node> Parser::parse_method(Token className, bool isLocal) {
         throwError(Type::IDENT);
       }
 
-      Args.push_back(std::make_unique<Node>(Node{.value = peek(), .op = Type::IDENT}));
+      args.push_back(std::make_unique<BasicDataNode>(
+        peek()
+      ));
+
       advance();
 
+      if (!check(Type::COMMA) && !check(Type::R_PAREN)) { throwError(Type::R_PAREN); }
       if (check(Type::COMMA)) advance();
     }
 
@@ -262,14 +261,13 @@ std::unique_ptr<Node> Parser::parse_method(Token className, bool isLocal) {
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
   expect(Type::KW_END);
 
-  return std::make_unique<Node>(Node{
-    .value = methodName,
-    .className = className,
-    .isLocal = isLocal,
-    .op = Type::KW_FUNCTION,
-    .Args = std::move(Args),
-    .body = std::move(body),
-  });
+  return std::make_unique<MethodNode>(
+    std::move(methodName),
+    std::move(className),
+    isLocal,
+    std::move(args),
+    std::move(body)
+  );
 }
 
 std::unique_ptr<Node> Parser::parse_ident() {
@@ -278,8 +276,6 @@ std::unique_ptr<Node> Parser::parse_ident() {
 
   std::unique_ptr<Node> args;
   std::vector<std::unique_ptr<Node>> argsVect;
-
-  Type op;
 
   if (check(Type::L_PAREN)) {
     advance();
@@ -290,25 +286,24 @@ std::unique_ptr<Node> Parser::parse_ident() {
       if (!checkNext(Type::R_PAREN)) advance();
     }
 
-    op = Type::CALLEDFUNCTION;
+    return std::make_unique<CalledFunctionNode>(
+      std::move(value),
+      std::move(argsVect)
+    );
   }
   else if (check(Type::EQUAL)) {
     advance();
+    std::unique_ptr<Node> right = parse_expr(0);
 
-    args = parse_expr(0);
-    argsVect.push_back(std::move(args));
-
-    op = Type::IDENT;
+    return std::make_unique<BinaryOpNode>(
+      Type::EQUAL,
+      std::make_unique<VariableNode>(std::move(value)),
+      std::move(right)
+    );
   }
   else {
     throwError(Type::EQUAL);
   }
-
-  return std::make_unique<Node>(Node{
-    .value = value,
-    .op = op, 
-    .Args = std::move(argsVect),
-  });
 }
 
 std::vector<std::unique_ptr<Node>> Parser::parse_block() {
@@ -378,7 +373,7 @@ std::unique_ptr<Node> Parser::nud() {
     Token value = peek();
     advance();
 
-    return std::make_unique<Node>(Node{.value = value});
+    return std::make_unique<BasicDataNode>( std::move(value) );
   }
   else if (check(Type::L_PAREN)) {
     advance();
@@ -404,11 +399,11 @@ std::unique_ptr<Node> Parser::parse_expr(int min_lbp) {
       advance(); advance();
 
       std::unique_ptr<Node> right = parse_expr(lbp - 1); 
-      left = std::make_unique<Node>(Node{
-        .op = op,
-        .left = std::move(left),
-        .right = std::move(right),
-      });
+      left = std::make_unique<BinaryOpNode>(
+        op,
+        std::move(left),
+        std::move(right)
+      );
 
       continue;
     }
@@ -420,11 +415,11 @@ std::unique_ptr<Node> Parser::parse_expr(int min_lbp) {
     }
     else right = parse_expr(lbp);
 
-    left = std::make_unique<Node>(Node{
-      .op = op,
-      .left = std::move(left),
-      .right = std::move(right),
-    });
+    left = std::make_unique<BinaryOpNode>(
+      op,
+      std::move(left),
+      std::move(right)
+    );
   }
 
   return left;

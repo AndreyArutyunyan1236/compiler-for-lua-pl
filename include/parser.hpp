@@ -6,21 +6,152 @@
 #define PARSER_HPP
 
 struct Node {
+  Vect2 position;
+
+  virtual std::string getName() = 0;
+  virtual ~Node() = default;
+};
+
+struct BasicDataNode : Node {
   Token value;
-  Token className;
-  bool isLocal = false;
-  Type op;
 
+  BasicDataNode(Token v) : value(std::move(v)) { }
 
-  std::unique_ptr<Node> left;
-  std::unique_ptr<Node> right;
+  std::string getName() override {
+    return "BasicDataNode";
+  }
+};
+
+struct IfNode : Node {
   std::unique_ptr<Node> condition;
-
-  std::vector<std::unique_ptr<Node>> arrayElements;
-  std::vector<std::unique_ptr<Node>> Args;
   std::vector<std::unique_ptr<Node>> body;
   std::vector<std::unique_ptr<Node>> elseifs;
   std::vector<std::unique_ptr<Node>> elseBody;
+
+  IfNode(std::unique_ptr<Node> c, std::vector<std::unique_ptr<Node>> b,
+         std::vector<std::unique_ptr<Node>> ei, std::vector<std::unique_ptr<Node>> eb)
+    : condition(std::move(c)), body(std::move(b)), elseifs(std::move(ei)), elseBody(std::move(eb)){ };
+
+  std::string getName() override {
+    return "IfNode";
+  }
+};
+
+struct ElseIfNode : Node {
+  std::unique_ptr<Node> condition;
+  std::vector<std::unique_ptr<Node>> body;
+
+  ElseIfNode(std::unique_ptr<Node> c, std::vector<std::unique_ptr<Node>> b) 
+    : condition(std::move(c)), body(std::move(b)) { };
+
+  std::string getName() override {
+    return "ElseIfNode";
+  }
+};
+
+struct WhileNode : Node {
+  std::unique_ptr<Node> condition;
+  std::vector<std::unique_ptr<Node>> body;
+
+  WhileNode(std::unique_ptr<Node> c, std::vector<std::unique_ptr<Node>> b) 
+    : condition(std::move(c)), body(std::move(b)) { } 
+
+  std::string getName() override {
+    return "WhileNode";
+  }
+};
+
+struct ForNode : Node {
+  std::unique_ptr<Node> condition;
+  std::vector<std::unique_ptr<Node>> body;
+
+  ForNode(std::unique_ptr<Node> c, std::vector<std::unique_ptr<Node>> b) 
+  : condition(std::move(c)), body(std::move(b)) { }
+
+  std::string getName() override {
+    return "ForNode";
+  }
+};
+
+struct FunctionNode : Node {
+  Token value;
+  bool isLocal = false;
+
+  std::vector<std::unique_ptr<Node>> args;
+  std::vector<std::unique_ptr<Node>> body;
+
+  FunctionNode(Token v, bool isL, std::vector<std::unique_ptr<Node>> a, std::vector<std::unique_ptr<Node>> b)
+  : value(std::move(v)), isLocal(isL), args(std::move(a)), body(std::move(b)) {}
+  
+  std::string getName() override {
+    return "FunctionNode";
+  }
+};
+
+struct MethodNode : Node {
+  Token value;
+  Token className;
+  bool isLocal = false;
+  
+  std::vector<std::unique_ptr<Node>> args;
+  std::vector<std::unique_ptr<Node>> body;
+
+  MethodNode(Token v, Token cn, bool isL, std::vector<std::unique_ptr<Node>> a, std::vector<std::unique_ptr<Node>> b)
+  : value(std::move(v)), className(std::move(cn)), isLocal(isL), args(std::move(a)), body(std::move(b)) {}
+
+  std::string getName() override {
+    return "MethodNode";
+  }
+};
+
+struct CalledFunctionNode : Node {
+  Token value;
+  std::vector<std::unique_ptr<Node>> args;
+
+  CalledFunctionNode(Token v, std::vector<std::unique_ptr<Node>> a) 
+    : value(std::move(v)), args(std::move(a)) { }
+
+  std::string getName() override {
+    return "CalledFunctionNode";
+  }
+};
+
+struct VariableNode : Node {
+  Token value;
+
+  VariableNode(Token v) : value(v) { }
+
+  std::string getName() override {
+    return "VariableNode";
+  }
+};
+
+struct LocalNode : Node {
+  Token value;
+
+  std::unique_ptr<Node> right;
+  std::vector<std::unique_ptr<Node>> arrayElements;
+
+  LocalNode(Token v, std::unique_ptr<Node> r, std::vector<std::unique_ptr<Node>> ae)
+    : value(std::move(v)), right(std::move(r)), arrayElements(std::move(ae)) { }  
+
+  std::string getName() override {
+    return "LocalNode";
+  }
+};
+
+struct BinaryOpNode : Node {
+  Type op;
+
+  std::unique_ptr<Node> left;
+  std::unique_ptr<Node> right;
+
+  BinaryOpNode(Type op, std::unique_ptr<Node> l, std::unique_ptr<Node> r) 
+    : op(op), left(std::move(l)), right(std::move(r)) { }
+
+  std::string getName() override {
+    return "BinaryOpNode";
+  }
 };
 
 class Parser {
