@@ -33,11 +33,28 @@ void Parser::expect(Type type) {
     advance();
     return;
   }
-  throwError();
+
+  throwError(type);
 }
 
-void Parser::throwError() {
-  throw std::runtime_error("Runtime Error: Expected different token at line " + std::to_string(peek().position.y));
+void Parser::throwError(Type expected) {
+  auto positionY = " line " + std::to_string(peek().position.y);
+  auto positionX = ", column " + std::to_string(peek().position.x);
+  auto mes1 = "Runtime Error at" + positionY + positionX + ": expected ";
+  auto mes2 = " but got ";
+  
+  std::string expectedStr;
+  std::string actualStr;
+
+  std::unordered_map<Type, std::string>::iterator exp = TokenToStrMAP.find(expected);
+  if (exp != TokenToStrMAP.end()) expectedStr = exp->second;
+  else throw std::runtime_error("Internal compiler error: Type not found in TokenToStrMAP" + positionY + positionX);
+
+  std::unordered_map<Type, std::string>::iterator act = TokenToStrMAP.find(peek().type);
+  if (act != TokenToStrMAP.end()) actualStr = act->second;
+  else throw std::runtime_error("Internal compiler error: Type not found in TokenToStrMAP" + positionY + positionX);
+
+  throw std::runtime_error(mes1 + expectedStr + mes2 + actualStr);
 }
 
 bool Parser::endblock() {
@@ -54,7 +71,7 @@ std::unique_ptr<Node> Parser::parse_local() {
     if (check(Type::KW_FUNCTION)) {
      return parse_function(true);
     }
-    else throwError();
+    else throwError(Type::KW_FUNCTION);
   }
 
   Token name = advance();
@@ -126,7 +143,7 @@ std::unique_ptr<Node> Parser::parse_if() {
 
   if (check(Type::KW_THEN)) {
     advance();
-  } else throwError();
+  } else throwError(Type::KW_THEN);
 
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
 
@@ -159,7 +176,7 @@ std::unique_ptr<Node> Parser::parse_elseif() {
 
   if (check(Type::KW_THEN)) {
     advance();
-  } else throwError();
+  } else throwError(Type::KW_THEN);
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
 
   return std::make_unique<Node>(Node{
@@ -173,7 +190,7 @@ std::unique_ptr<Node> Parser::parse_function(bool isLocal) {
   advance();
   
   if (!check(Type::IDENT)) {
-    throwError();
+    throwError(Type::IDENT);
   }
   Token funcName = peek();
   advance();
@@ -181,16 +198,13 @@ std::unique_ptr<Node> Parser::parse_function(bool isLocal) {
   std::vector<std::unique_ptr<Node>> Args;
   if (check(Type::L_PAREN)) {
     advance();
+    std::unique_ptr<Node> args;
 
     while (!check(Type::R_PAREN)) {
-      if (!check(Type::IDENT)) {
-        throwError();
-      }
+      args = parse_expr(0);
+      Args.push_back(std::move(args));
 
-      Args.push_back(std::make_unique<Node>(Node{.value = peek(), .op = Type::IDENT}));
-      advance();
-
-      if (check(Type::COMMA)) advance();
+      if (!checkNext(Type::R_PAREN)) advance();
     }
 
     advance();
@@ -201,7 +215,7 @@ std::unique_ptr<Node> Parser::parse_function(bool isLocal) {
       Token className = peek();
       return parse_method(className, isLocal);
     }
-    else throwError();
+    else throwError(Type::COLON_COLON);
   } 
   
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
@@ -220,8 +234,9 @@ std::unique_ptr<Node> Parser::parse_method(Token className, bool isLocal) {
   advance();
   
   if (!check(Type::IDENT)) {
-    throwError();
+    throwError(Type::IDENT);
   }
+
   Token methodName = peek();
   advance();
 
@@ -231,7 +246,7 @@ std::unique_ptr<Node> Parser::parse_method(Token className, bool isLocal) {
 
     while (!check(Type::R_PAREN)) {
       if (!check(Type::IDENT)) {
-        throwError();
+        throwError(Type::IDENT);
       }
 
       Args.push_back(std::make_unique<Node>(Node{.value = peek(), .op = Type::IDENT}));
@@ -242,7 +257,7 @@ std::unique_ptr<Node> Parser::parse_method(Token className, bool isLocal) {
 
     advance();
   }
-  else throwError();
+  else throwError(Type::L_PAREN);
   
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
   expect(Type::KW_END);
@@ -286,7 +301,7 @@ std::unique_ptr<Node> Parser::parse_ident() {
     op = Type::IDENT;
   }
   else {
-    throwError();
+    throwError(Type::EQUAL);
   }
 
   return std::make_unique<Node>(Node{
@@ -373,7 +388,7 @@ std::unique_ptr<Node> Parser::nud() {
     return ParenExpr;
   }
 
-  throwError();
+  throwError(Type::IDENT);
 }
 
 std::unique_ptr<Node> Parser::parse_expr(int min_lbp) {

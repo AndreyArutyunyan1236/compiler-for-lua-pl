@@ -30,14 +30,69 @@ private:
   Type endblockArray[5] = {Type::KW_END, Type::KW_ELSE,
                           Type::KW_ELSEIF, Type::KW_UNTIL,
                           Type::END_OF_FILE};
+
+  std::unordered_map<Type, std::string> TokenToStrMAP = {
+    {Type::KW_IF,          "'if'"},
+    {Type::KW_ELSEIF,      "'else if'"},
+    {Type::KW_ELSE,        "'else'"},
+    {Type::KW_LOCAL,       "'local'"},
+    {Type::KW_THEN,        "'then'"},
+    {Type::KW_END,         "'end'"},
+    {Type::KW_FUNCTION,    "'function'"},
+    {Type::KW_RETURN,      "'return'"},
+    {Type::KW_WHILE,       "'while'"},
+    {Type::KW_FOR,         "'for'"},
+    {Type::KW_DO,          "'do'"},
+    {Type::KW_REPEAT,      "'repeat'"},
+    {Type::KW_UNTIL,       "'until'"},
+    {Type::KW_NIL,         "'nil'"},
+    {Type::KW_IN,          "'in'"},
+    {Type::KW_TRUE,        "'true'"},
+    {Type::KW_FALSE,       "'false'"},
+    {Type::KW_AND,         "'and'"},
+    {Type::KW_OR,          "'or'"},
+    {Type::KW_NOT,         "'not'"},
+    {Type::IDENT,          "'identificator'"},
+    {Type::CALLEDFUNCTION, "'function invocation'"},
+    {Type::PLUS,           "'+'"},
+    {Type::MINUS,          "'-'"},
+    {Type::STAR,           "'*'"},
+    {Type::PERCENT,        "'%'"},
+    {Type::CARET,          "'^'"},
+    {Type::HASH,           "'#'"},
+    {Type::L_PAREN,        "'('"},
+    {Type::R_PAREN,        "')'"},
+    {Type::L_BRACE,        "'{'"},
+    {Type::R_BRACE,        "'}'"},
+    {Type::L_BRACKET,      "'['"},
+    {Type::R_BRACKET,      "']'"},
+    {Type::COMMA,          "','"},
+    {Type::SEMICOLON,      "';'"},
+    {Type::COLON_COLON,    "':'"},
+    {Type::EQUAL,          "'='"},
+    {Type::EQUAL_EQUAL,    "'=='"},
+    {Type::NOT_EQUAL,      "'!='"},
+    {Type::LESS,           "'<'"},
+    {Type::GREATER,        "'>'"},
+    {Type::LESS_EQUAL,     "'<='"},
+    {Type::GREATER_EQUAL,  "'>='"},
+    {Type::SLASH,          "'/'"},
+    {Type::AMPERSAND,      "'&'"},
+    {Type::VERTICAL_BAR,   "'|'"},
+    {Type::LIT_INT,        "'integer literal'"},
+    {Type::LIT_STRING,     "'string literal'"},
+    {Type::LIT_FLOAT,      "'float literal'"},
+    {Type::END_OF_FILE,    "'end of file'"},
+  };
+
   Token peek();
   Token peekNext();
   Token advance();
   bool  check(Type type);
   bool checkNext(Type type); 
   void  expect(Type type);
-  [[noreturn]] void throwError();
-
+  [[noreturn]] void throwError(Type expected);
+   
   bool endblock();
   int  get_lbp(); 
   std::unique_ptr<Node> nud(); 
