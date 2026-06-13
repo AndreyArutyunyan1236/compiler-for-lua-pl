@@ -44,9 +44,9 @@ Code Generator
 ------------------------------------------------------------------------------------------------------------- */
 #include <fstream>         // INCLUDED FOR std::fstream, readFile() 
 #include <string>          // INCLUDED FOR std::pmr::string, std::getline()
-#include <parser.hpp>      // INCLUDED FOR class Parser, parse_block()
 #include <vector>          // INCLUDED FOR std::vector<Token>
 #include "lexer.hpp"       // INCLUDED FOR class Lexer, tokenize() 
+#include "parser.hpp"      // INCLUDED FOR class Parser, parse_block()
 
 int main([[maybe_unused]]int argc, char** args) {
   std::string sourceCode;

@@ -1,5 +1,9 @@
+// need to handle: 
+// return
+// things like this: io.Write(...)
+
 #include <parser.hpp>
-#include <stdexcept>
+#include <format>
 
 Token Parser::peek() {
   if (index >= listOfTokens.size()) return Token{.type = Type::END_OF_FILE};  
@@ -38,23 +42,33 @@ void Parser::expect(Type type) {
 }
 
 void Parser::throwError(Type expected) {
-  auto positionY = " line " + std::to_string(peek().position.y);
-  auto positionX = ", column " + std::to_string(peek().position.x);
-  auto mes1 = "Runtime Error at" + positionY + positionX + ": expected ";
-  auto mes2 = " but got ";
-  
+  float positionX = peek().position.x;
+  float positionY = peek().position.y;
+
   std::string expectedStr;
   std::string actualStr;
 
   std::unordered_map<Type, std::string>::iterator exp = TokenToStrMAP.find(expected);
+
   if (exp != TokenToStrMAP.end()) expectedStr = exp->second;
-  else throw std::runtime_error("Internal compiler error: Type not found in TokenToStrMAP" + positionY + positionX);
+  else throw std::runtime_error(
+      std::format("internal compiler error: type not found in tokentostrmap in line {}, col {}",
+                                            positionY, positionX)
+  );
 
   std::unordered_map<Type, std::string>::iterator act = TokenToStrMAP.find(peek().type);
-  if (act != TokenToStrMAP.end()) actualStr = act->second;
-  else throw std::runtime_error("Internal compiler error: Type not found in TokenToStrMAP" + positionY + positionX);
 
-  throw std::runtime_error(mes1 + expectedStr + mes2 + actualStr);
+  if (act != TokenToStrMAP.end()) actualStr = act->second;
+  else throw std::runtime_error(
+      std::format("internal compiler error: type not found in tokentostrmap in line {}, col {}",
+                                            positionY, positionX)
+  );
+
+  throw std::runtime_error(
+    std::format("Runtime Error at line {} col {}: expected {} but got {}",
+                positionY, positionX,
+                expectedStr, actualStr)
+  );
 }
 
 bool Parser::endblock() {
@@ -83,11 +97,12 @@ std::unique_ptr<Node> Parser::parse_local() {
     std::unique_ptr<Node> element;
 
     while (!check(Type::R_BRACKET)) { 
-      element = parse_expr(0);
-      array.push_back(std::move(element)); 
+      array.push_back(parse_expr(0)); 
 
-      if (!checkNext(Type::R_BRACKET)) advance();
+      if (check(Type::COMMA)) advance();
     }
+
+    expect(Type::R_BRACKET);
 
     return std::make_unique<LocalNode>(
       std::move(name),
@@ -112,6 +127,10 @@ std::unique_ptr<Node> Parser::parse_while() {
   advance();
 
   std::unique_ptr<Node> condition = parse_expr(0); 
+
+  if (!check(Type::KW_DO)) throwError(Type::KW_DO);
+  advance();
+  
   std::vector<std::unique_ptr<Node>> body = parse_block();
   expect(Type::KW_END);
 
@@ -125,6 +144,10 @@ std::unique_ptr<Node> Parser::parse_for() {
   advance();
 
   std::unique_ptr<Node> condition = parse_expr(0); 
+
+  if (!check(Type::KW_DO)) throwError(Type::KW_DO);
+  advance();
+
   std::vector<std::unique_ptr<Node>> body = parse_block();
   expect(Type::KW_END);
 
@@ -174,6 +197,7 @@ std::unique_ptr<Node> Parser::parse_elseif() {
   if (check(Type::KW_THEN)) {
     advance();
   } else throwError(Type::KW_THEN);
+
   std::vector<std::unique_ptr<Node>> body = parse_block(); 
 
   return std::make_unique<ElseIfNode>(
@@ -197,13 +221,11 @@ std::unique_ptr<Node> Parser::parse_function(bool isLocal) {
     std::unique_ptr<Node> args;
 
     while (!check(Type::R_PAREN)) {
-      args = parse_expr(0);
-      Args.push_back(std::move(args));
+      Args.push_back(parse_expr(0));
 
-      if (!checkNext(Type::R_PAREN)) advance();
+      if (check(Type::COMMA)) advance();
     }
-
-    advance();
+    expect(Type::R_PAREN);
   }
   else {
     if (check(Type::COLON_COLON)) {
@@ -244,11 +266,7 @@ std::unique_ptr<Node> Parser::parse_method(Token className, bool isLocal) {
         throwError(Type::IDENT);
       }
 
-      args.push_back(std::make_unique<BasicDataNode>(
-        peek()
-      ));
-
-      advance();
+      args.push_back(parse_expr(0));
 
       if (!check(Type::COMMA) && !check(Type::R_PAREN)) { throwError(Type::R_PAREN); }
       if (check(Type::COMMA)) advance();
@@ -272,19 +290,20 @@ std::unique_ptr<Node> Parser::parse_method(Token className, bool isLocal) {
 
 std::unique_ptr<Node> Parser::parse_ident() {
   Token value = peek();
-  advance();
-
-  std::unique_ptr<Node> args;
   std::vector<std::unique_ptr<Node>> argsVect;
+
+  advance();
 
   if (check(Type::L_PAREN)) {
     advance();
-    while (!check(Type::R_PAREN)) {
-      args = parse_expr(0);
-      argsVect.push_back(std::move(args));
 
-      if (!checkNext(Type::R_PAREN)) advance();
+    while (!check(Type::R_PAREN)) {
+      argsVect.push_back(parse_expr(0));
+
+      if (check(Type::COMMA)) advance();
     }
+
+    expect(Type::R_PAREN);
 
     return std::make_unique<CalledFunctionNode>(
       std::move(value),
@@ -354,6 +373,7 @@ int Parser::get_lbp() {
     case Type::GREATER_EQUAL: return 50;
     case Type::LESS:          return 50;
     case Type::LESS_EQUAL:    return 50;
+    case Type::CONCAT:        return 55;
     case Type::PLUS:          return 60;
     case Type::MINUS:         return 60;
     case Type::SLASH:         return 70;
@@ -366,8 +386,7 @@ int Parser::get_lbp() {
 }
 
 std::unique_ptr<Node> Parser::nud() {
-  if (check(Type::IDENT) || check(Type::LIT_INT) ||
-      check(Type::LIT_FLOAT) || check(Type::LIT_STRING)
+  if (check(Type::LIT_INT) || check(Type::LIT_FLOAT) || check(Type::LIT_STRING)
       || check(Type::KW_TRUE) || check(Type::KW_FALSE))
   {
     Token value = peek();
@@ -375,13 +394,29 @@ std::unique_ptr<Node> Parser::nud() {
 
     return std::make_unique<BasicDataNode>( std::move(value) );
   }
-  else if (check(Type::L_PAREN)) {
+  if (check(Type::IDENT)) {
+    Token value = peek();
     advance();
-    std::unique_ptr<Node> ParenExpr = parse_expr(0); 
-    expect(Type::R_PAREN);
-    
-    return ParenExpr;
-  }
+
+    if (check(Type::L_PAREN)) {
+      advance();
+
+      std::vector<std::unique_ptr<Node>> args;
+      
+      while (!check(Type::R_PAREN)) {
+        args.push_back(parse_expr(0));
+
+        if (check(Type::COMMA)) advance();
+      }
+
+      expect(Type::R_PAREN);
+      
+      return std::make_unique<CalledFunctionNode>( value, std::move(args) );
+    }
+    else {
+      return std::make_unique<BasicDataNode>(value);
+    }
+  } 
 
   throwError(Type::IDENT);
 }
@@ -407,9 +442,24 @@ std::unique_ptr<Node> Parser::parse_expr(int min_lbp) {
 
       continue;
     }
+
+    if (op == Type::CONCAT) {
+      advance();
+
+      std::unique_ptr<Node> right = parse_expr(lbp - 1); 
+      left = std::make_unique<BinaryOpNode>(
+        op,
+        std::move(left),
+        std::move(right)
+      );
+
+      continue;
+    }
+
     advance();
 
     std::unique_ptr<Node> right; 
+
     if (op == Type::EQUAL) {
       right = parse_expr(lbp-1);
     }

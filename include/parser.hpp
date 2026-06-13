@@ -8,8 +8,8 @@
 struct Node {
   Vect2 position;
 
-  virtual std::string getName() = 0;
   virtual ~Node() = default;
+  virtual std::string getName() = 0;
 };
 
 struct BasicDataNode : Node {
@@ -190,6 +190,8 @@ private:
     {Type::STAR,           "'*'"},
     {Type::PERCENT,        "'%'"},
     {Type::CARET,          "'^'"},
+    {Type::CONCAT,         "'..'"},
+    {Type::DOT,            "'.'"},
     {Type::HASH,           "'#'"},
     {Type::L_PAREN,        "'('"},
     {Type::R_PAREN,        "')'"},

@@ -21,7 +21,7 @@ enum class Type {
   
   PLUS, // Symbols 
   MINUS, STAR, VERTICAL_BAR, SLASH, DOUBLE_SLASH, PERCENT,
-  CARET, CONCAT, HASH, EQUAL, EQUAL_EQUAL,
+  CARET, DOT, CONCAT, HASH, EQUAL, EQUAL_EQUAL,
   NOT_EQUAL, LESS, GREATER, LESS_EQUAL,
   GREATER_EQUAL, L_PAREN, R_PAREN, L_BRACE,
   R_BRACE, L_BRACKET, R_BRACKET, COMMA,
@@ -60,7 +60,6 @@ private:
     {']', Type::R_BRACKET},
     {',', Type::COMMA},
     {';', Type::SEMICOLON},
-    {':', Type::COLON_COLON},
     {'\0', Type::END_OF_FILE},
   };
   
@@ -69,6 +68,7 @@ private:
     {"if",       Type::KW_IF},
     {"then",     Type::KW_THEN},
     {"else",     Type::KW_ELSE},
+    {"elseif",   Type::KW_ELSEIF},
     {"end",      Type::KW_END},
     {"function", Type::KW_FUNCTION},
     {"return",   Type::KW_RETURN},

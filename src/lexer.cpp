@@ -164,7 +164,7 @@ Token Lexer::nextToken() {
       case '.':
         advance();
         if (match('.')) type = Type::CONCAT;
-        else type = Type::ERROR;
+        else type = Type::DOT;
         return Token{.type = type, .position = {x, y}};
 
       case '|':
@@ -186,8 +186,11 @@ Token Lexer::nextToken() {
 
 std::vector<Token> Lexer::tokenize() { 
   std::vector<Token> VectorOfTokens;
+
   while (peek() != '\0') {
-    VectorOfTokens.push_back(nextToken());
+    Token t = nextToken();
+    VectorOfTokens.push_back(t);
   } 
+
   return VectorOfTokens;
 }
